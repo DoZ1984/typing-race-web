@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { register } from '../services/api';
 
 const RegisterPage = () => {
   const [username, setUsername] = useState('');
@@ -8,25 +9,39 @@ const RegisterPage = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Simulación de validación de registro (esto será reemplazado por lógica real de autenticación)
-    if (!username || !email || !password || !confirmPassword) {
-      setError('Por favor, completa todos los campos.');
-      return;
-    }
+    setIsLoading(true);
+    setError('');
+
     if (password !== confirmPassword) {
       setError('Las contraseñas no coinciden.');
+      setIsLoading(false);
       return;
     }
+
     if (!agreeTerms) {
       setError('Debes aceptar los términos y condiciones.');
+      setIsLoading(false);
       return;
     }
-    // Simulación de registro exitoso
-    alert('Registro exitoso. Serás redirigido al inicio de sesión...');
-    setError('');
+
+    try {
+      await register(username, email, password);
+      // Si el registro es exitoso, el token y los datos del usuario se guardan en localStorage por el servicio api.js
+      navigate('/profile');
+    } catch (err) {
+      if (err.response && err.response.data && err.response.data.message) {
+        setError(err.response.data.message);
+      } else {
+        setError('Error al crear la cuenta. Por favor, intenta de nuevo.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -56,6 +71,7 @@ const RegisterPage = () => {
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Elige un nombre de usuario"
                 required
+                disabled={isLoading}
               />
             </div>
 
@@ -69,6 +85,7 @@ const RegisterPage = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="tu.correo@ejemplo.com"
                 required
+                disabled={isLoading}
               />
             </div>
 
@@ -82,6 +99,7 @@ const RegisterPage = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
+                disabled={isLoading}
               />
               <p className="text-xs text-gray-500 mt-1">La contraseña debe tener al menos 8 caracteres.</p>
             </div>
@@ -96,6 +114,7 @@ const RegisterPage = () => {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="••••••••"
                 required
+                disabled={isLoading}
               />
             </div>
 
@@ -107,11 +126,14 @@ const RegisterPage = () => {
                 onChange={() => setAgreeTerms(!agreeTerms)}
                 className="w-4 h-4 text-primary focus:ring-primary border-gray-300 rounded"
                 required
+                disabled={isLoading}
               />
               <label htmlFor="agreeTerms" className="ml-2 text-sm text-gray-700">Acepto los <a href="#" className="text-primary hover:underline">Términos y Condiciones</a> y la <a href="#" className="text-primary hover:underline">Política de Privacidad</a></label>
             </div>
 
-            <button type="submit" className="btn btn-primary w-full">Crear Cuenta</button>
+            <button type="submit" className="btn btn-primary w-full" disabled={isLoading}>
+              {isLoading ? 'Creando cuenta...' : 'Crear Cuenta'}
+            </button>
           </form>
 
           <div className="text-center text-sm text-gray-500 mt-6">
