@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { saveRaceResults } from '../services/api';
 
 const PracticePage = () => {
   const [text, setText] = useState('');
@@ -8,6 +10,8 @@ const PracticePage = () => {
   const [difficulty, setDifficulty] = useState('medium');
   const [stats, setStats] = useState({ wpm: 0, ppm: 0, accuracy: 0 });
   const [isTyping, setIsTyping] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
 
   // Textos de ejemplo según dificultad
   const sampleTexts = {
@@ -24,11 +28,17 @@ const PracticePage = () => {
     setEndTime(null);
     setIsTyping(false);
     setStats({ wpm: 0, ppm: 0, accuracy: 0 });
+    setSaveMessage('');
   };
 
   useEffect(() => {
     generateText(difficulty);
   }, [difficulty]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    setIsLoggedIn(!!token);
+  }, []);
 
   // Manejar entrada del usuario
   const handleInputChange = (e) => {
@@ -48,7 +58,7 @@ const PracticePage = () => {
   };
 
   // Calcular estadísticas
-  const calculateStats = (input) => {
+  const calculateStats = async (input) => {
     if (!startTime || !endTime) return;
 
     const timeElapsed = (endTime - startTime) / 60000; // minutos
@@ -61,6 +71,18 @@ const PracticePage = () => {
     const accuracy = Math.round((correctChars / text.length) * 100);
 
     setStats({ wpm, ppm, accuracy });
+
+    // Guardar resultados si el usuario está logueado
+    if (isLoggedIn) {
+      try {
+        await saveRaceResults(wpm, ppm, accuracy, 1, 1, 'practice');
+        setSaveMessage('¡Resultados guardados en tu perfil!');
+      } catch (err) {
+        setSaveMessage('Error al guardar resultados.');
+      }
+    } else {
+      setSaveMessage('Inicia sesión para guardar tus resultados.');
+    }
   };
 
   // Manejar cambio de dificultad
@@ -127,6 +149,11 @@ const PracticePage = () => {
                 <p className="text-sm text-gray-600">Precisión</p>
               </div>
             </div>
+            {saveMessage && (
+              <div className="mt-4 p-3 bg-gray-100 rounded-lg text-center text-sm text-gray-700">
+                {saveMessage}
+              </div>
+            )}
             <div className="mt-6 text-center">
               <button onClick={handleRestart} className="btn btn-primary">Intentar de Nuevo</button>
               <Link to="/race" className="btn btn-outline ml-3">Competir en Carrera</Link>
