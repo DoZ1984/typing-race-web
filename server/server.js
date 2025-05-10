@@ -5,6 +5,7 @@ const cors = require('cors');
 const http = require('http');
 const socketIO = require('socket.io');
 const path = require('path');
+const errorHandler = require('./middleware/error');
 
 // Importar rutas
 const authRoutes = require('./routes/auth');
@@ -34,6 +35,12 @@ app.use('/api/races', raceRoutes);
 app.use('/api/tournaments', tournamentRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
 
+// Configuración de Socket.IO para carreras en tiempo real
+require('./utils/socket')(io);
+
+// Middleware de manejo de errores
+app.use(errorHandler);
+
 // Servir archivos estáticos en producción
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../client/build')));
@@ -42,9 +49,6 @@ if (process.env.NODE_ENV === 'production') {
     res.sendFile(path.resolve(__dirname, '../client/build', 'index.html'));
   });
 }
-
-// Configuración de Socket.IO para carreras en tiempo real
-require('./utils/socket')(io);
 
 // Conexión a la base de datos
 mongoose
