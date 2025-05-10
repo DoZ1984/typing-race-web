@@ -1,26 +1,33 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { login } from '../services/api';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Simulación de error de login (esto será reemplazado por lógica real de autenticación)
-    if (!email || !password) {
-      setError('Por favor, completa todos los campos.');
-      return;
-    }
-    if (email !== 'test@example.com' || password !== 'password123') {
-      setError('Correo electrónico o contraseña incorrectos.');
-      return;
-    }
-    // Simulación de login exitoso
-    alert('Inicio de sesión exitoso. Serás redirigido...');
+    setIsLoading(true);
     setError('');
+
+    try {
+      await login(email, password);
+      // Si el login es exitoso, el token y los datos del usuario se guardan en localStorage por el servicio api.js
+      navigate('/profile');
+    } catch (err) {
+      if (err.response && err.response.data && err.response.data.message) {
+        setError(err.response.data.message);
+      } else {
+        setError('Error al iniciar sesión. Por favor, intenta de nuevo.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -50,6 +57,7 @@ const LoginPage = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="tu.correo@ejemplo.com"
                 required
+                disabled={isLoading}
               />
             </div>
 
@@ -66,6 +74,7 @@ const LoginPage = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
+                disabled={isLoading}
               />
             </div>
 
@@ -76,11 +85,14 @@ const LoginPage = () => {
                 checked={rememberMe}
                 onChange={() => setRememberMe(!rememberMe)}
                 className="w-4 h-4 text-primary focus:ring-primary border-gray-300 rounded"
+                disabled={isLoading}
               />
               <label htmlFor="rememberMe" className="ml-2 text-sm text-gray-700">Recordarme</label>
             </div>
 
-            <button type="submit" className="btn btn-primary w-full">Iniciar Sesión</button>
+            <button type="submit" className="btn btn-primary w-full" disabled={isLoading}>
+              {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+            </button>
           </form>
 
           <div className="text-center text-sm text-gray-500 mt-6">
