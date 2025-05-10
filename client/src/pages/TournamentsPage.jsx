@@ -112,7 +112,7 @@ const TournamentsPage = () => {
                             </div>
                           </div>
                           <div className="mt-3 md:mt-0">
-                            {tournament.participants.includes(localStorage.getItem('user')?.id) ? (
+                            {tournament.participants.some(p => p.toString() === JSON.parse(localStorage.getItem('user') || '{}').id) ? (
                               <span className="inline-flex items-center px-4 py-2 rounded-md bg-green-100 text-green-800 font-medium text-sm">
                                 <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"></path></svg>
                                 Registrado
@@ -161,7 +161,7 @@ const TournamentsPage = () => {
                             </span>
                           </div>
                         </div>
-                        <p className="text-gray-600">{tournament.description || 'Este torneo ha finalizado.'} {tournament.participants.includes(localStorage.getItem('user')?.id) ? '¡Gracias por participar!' : 'No participaste en este torneo.'}</p>
+                        <p className="text-gray-600">{tournament.description || 'Este torneo ha finalizado.'} {tournament.participants.some(p => p.toString() === JSON.parse(localStorage.getItem('user') || '{}').id) ? '¡Gracias por participar!' : 'No participaste en este torneo.'}</p>
                       </div>
                     ))}
                   </div>
