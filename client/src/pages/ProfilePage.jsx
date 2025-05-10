@@ -1,38 +1,44 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { getProfile, logout } from '../services/api';
 
 const ProfilePage = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // Simula el estado de login
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [userData, setUserData] = useState(null);
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
 
-  // Datos simulados del usuario (esto será reemplazado por datos reales de la API)
-  const userData = {
-    username: 'TecladoNinja',
-    email: 'ninja@example.com',
-    level: 12,
-    experience: 75, // Porcentaje hacia el próximo nivel
-    wpm: 95,
-    ppm: 475,
-    accuracy: 97,
-    racesCompleted: 120,
-    racesWon: 35,
-    tournamentsPlayed: 5,
-    tournamentsWon: 1,
-    badges: [
-      { id: 1, name: 'Velocista', description: 'Alcanza 80+ WPM', icon: '🚀' },
-      { id: 2, name: 'Preciso', description: 'Alcanza 95% de precisión', icon: '🎯' },
-      { id: 3, name: 'Maratonista', description: 'Completa 100 carreras', icon: '🏃' },
-      { id: 4, name: 'Campeón', description: 'Gana un torneo', icon: '🏆' }
-    ],
-    recentRaces: [
-      { id: 1, date: '05/05/2025', wpm: 98, accuracy: 96, position: 2, participants: 5 },
-      { id: 2, date: '03/05/2025', wpm: 93, accuracy: 97, position: 1, participants: 4 },
-      { id: 3, date: '01/05/2025', wpm: 95, accuracy: 95, position: 3, participants: 6 }
-    ]
-  };
+  useEffect(() => {
+    const checkLoginStatus = async () => {
+      setIsLoading(true);
+      setError('');
+      try {
+        const token = localStorage.getItem('token');
+        if (token) {
+          const data = await getProfile();
+          setUserData(data);
+          setIsLoggedIn(true);
+        } else {
+          setIsLoggedIn(false);
+        }
+      } catch (err) {
+        setIsLoggedIn(false);
+        setError('Error al cargar los datos del perfil. Por favor, inicia sesión nuevamente.');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        navigate('/login');
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const handleLoginPrompt = () => {
-    // Simulación de activar login
-    setIsLoggedIn(false);
+    checkLoginStatus();
+  }, [navigate]);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
   };
 
   return (
@@ -51,6 +57,22 @@ const ProfilePage = () => {
               <Link to="/login" className="btn btn-primary w-full sm:w-auto">Iniciar Sesión</Link>
               <Link to="/register" className="btn btn-outline w-full sm:w-auto">Crear Cuenta</Link>
             </div>
+          </div>
+        </div>
+      ) : isLoading ? (
+        <div className="max-w-2xl mx-auto text-center">
+          <div className="card mb-6 p-8">
+            <p className="text-gray-600">Cargando datos del perfil...</p>
+          </div>
+        </div>
+      ) : error ? (
+        <div className="max-w-2xl mx-auto text-center">
+          <div className="card mb-6 p-8">
+            <div className="alert alert-danger mb-6" role="alert">
+              <svg className="flex-shrink-0 inline w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              {error}
+            </div>
+            <Link to="/login" className="btn btn-primary w-full sm:w-auto">Ir a Iniciar Sesión</Link>
           </div>
         </div>
       ) : (
@@ -75,10 +97,10 @@ const ProfilePage = () => {
               <div className="p-6 pt-0 text-center">
                 <div className="flex justify-center gap-4 mb-6 mt-4">
                   <button className="btn btn-outline text-sm px-3 py-1.5">Editar Perfil</button>
-                  <button className="btn btn-danger text-sm px-3 py-1.5" onClick={handleLoginPrompt}>Cerrar Sesión</button>
+                  <button className="btn btn-danger text-sm px-3 py-1.5" onClick={handleLogout}>Cerrar Sesión</button>
                 </div>
                 <div className="text-sm text-gray-500">
-                  <p>Miembro desde: Enero 2025</p>
+                  <p>Miembro desde: {new Date(userData.createdAt).toLocaleDateString('es-ES')}</p>
                 </div>
               </div>
             </div>
@@ -89,26 +111,26 @@ const ProfilePage = () => {
                 <h2 className="text-2xl mb-6">Estadísticas de Mecanografía</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-6">
                   <div className="bg-blue-50 p-5 rounded-lg text-center border border-blue-200">
-                    <p className="text-3xl font-bold text-primary mb-1">{userData.wpm}</p>
+                    <p className="text-3xl font-bold text-primary mb-1">{userData.stats.bestWpm}</p>
                     <p className="text-sm text-gray-600">Palabras por Minuto (WPM)</p>
                   </div>
                   <div className="bg-green-50 p-5 rounded-lg text-center border border-green-200">
-                    <p className="text-3xl font-bold text-success mb-1">{userData.ppm}</p>
+                    <p className="text-3xl font-bold text-success mb-1">{userData.stats.bestPpm}</p>
                     <p className="text-sm text-gray-600">Pulsaciones por Minuto (PPM)</p>
                   </div>
                   <div className="bg-purple-50 p-5 rounded-lg text-center border border-purple-200">
-                    <p className="text-3xl font-bold text-purple-600 mb-1">{userData.accuracy}%</p>
+                    <p className="text-3xl font-bold text-purple-600 mb-1">{userData.stats.avgAccuracy}%</p>
                     <p className="text-sm text-gray-600">Precisión Promedio</p>
                   </div>
                   <div className="bg-yellow-50 p-5 rounded-lg text-center border border-yellow-200 row-span-2 sm:row-span-1 md:row-span-2 lg:row-span-1">
                     <div className="flex justify-center mb-1">
-                      <div className="text-yellow-500 text-3xl">🏆 {userData.racesWon}</div>
+                      <div className="text-yellow-500 text-3xl">🏆 {userData.stats.racesWon}</div>
                     </div>
-                    <p className="text-sm text-gray-600">Carreras Ganadas de {userData.racesCompleted}</p>
+                    <p className="text-sm text-gray-600">Carreras Ganadas de {userData.stats.racesCompleted}</p>
                   </div>
                   <div className="bg-indigo-50 p-5 rounded-lg text-center border border-indigo-200 col-span-1 sm:col-span-2 md:col-span-1 lg:col-span-2 row-span-2 sm:row-span-1 md:row-span-2 lg:row-span-1 flex items-center justify-center flex-col">
                     <div className="text-3xl font-bold text-indigo-600 mb-1 flex items-center">
-                      <span className="mr-2">🏅 {userData.tournamentsWon}</span> <span className="text-base font-normal text-gray-600">de {userData.tournamentsPlayed} Torneos Jugados</span>
+                      <span className="mr-2">🏅 {userData.stats.tournamentsWon}</span> <span className="text-base font-normal text-gray-600">de {userData.stats.tournamentsPlayed} Torneos Jugados</span>
                     </div>
                     <p className="text-sm text-gray-600">Historial de Torneos</p>
                   </div>
@@ -119,19 +141,19 @@ const ProfilePage = () => {
               <div className="card mb-6">
                 <h2 className="text-2xl mb-6">Logros e Insignias</h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-6">
-                  {userData.badges.map(badge => (
-                    <div key={badge.id} className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center hover:shadow-sm transition-shadow" title={badge.description}>
-                      <div className="text-3xl mb-2">{badge.icon}</div>
-                      <p className="font-medium text-gray-900 text-sm">{badge.name}</p>
-                      <p className="text-xs text-gray-500 line-clamp-2">{badge.description}</p>
+                  {userData.badges && userData.badges.length > 0 ? (
+                    userData.badges.map(badge => (
+                      <div key={badge.id} className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center hover:shadow-sm transition-shadow" title={badge.description}>
+                        <div className="text-3xl mb-2">{badge.icon || '🏅'}</div>
+                        <p className="font-medium text-gray-900 text-sm">{badge.name}</p>
+                        <p className="text-xs text-gray-500 line-clamp-2">{badge.description}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="col-span-full text-center text-gray-500 p-4">
+                      <p>Aún no has ganado insignias. ¡Participa en carreras y torneos para desbloquearlas!</p>
                     </div>
-                  ))}
-                  {/* Insignias bloqueadas */}
-                  <div className="bg-gray-100 border border-gray-200 rounded-lg p-4 text-center opacity-70 hover:shadow-sm transition-shadow" title="Completa 500 carreras para desbloquear">
-                    <div className="text-3xl mb-2 text-gray-400">🔒</div>
-                    <p className="font-medium text-gray-900 text-sm">Ultramaratonista</p>
-                    <p className="text-xs text-gray-500 line-clamp-2">Completa 500 carreras</p>
-                  </div>
+                  )}
                 </div>
                 <div className="text-center">
                   <button className="btn btn-outline">Ver Todos los Logros</button>
@@ -152,7 +174,12 @@ const ProfilePage = () => {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {userData.recentRaces.map(race => (
+                      {/* Datos simulados, esto será reemplazado por un endpoint real de historial de carreras */}
+                      {[
+                        { id: 1, date: '05/05/2025', wpm: 98, accuracy: 96, position: 2, participants: 5 },
+                        { id: 2, date: '03/05/2025', wpm: 93, accuracy: 97, position: 1, participants: 4 },
+                        { id: 3, date: '01/05/2025', wpm: 95, accuracy: 95, position: 3, participants: 6 }
+                      ].map(race => (
                         <tr key={race.id} className="hover:bg-gray-50 transition-colors">
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{race.date}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono font-medium">{race.wpm}</td>
